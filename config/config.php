@@ -64,17 +64,23 @@ ini_set('display_errors', 1);
 // Start session if not already started
 if (session_status() == PHP_SESSION_NONE) {
     session_name(SESSION_NAME);
+    ini_set('session.cookie_secure', 0); // Allow cookies without HTTPS
+    ini_set('session.cookie_httponly', 1); // Protect against XSS
+    ini_set('session.use_only_cookies', 1); // Force cookies for session
     session_start();
+    error_log("Session started with name: " . session_name());
 }
 
 // Set session timeout
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
+    error_log("Session timeout - Last activity: " . date('Y-m-d H:i:s', $_SESSION['last_activity']));
     session_unset();
     session_destroy();
     header('Location: ' . APP_URL . '/auth/login.php?timeout=1');
     exit();
 }
 $_SESSION['last_activity'] = time();
+error_log("Session activity updated - Current time: " . date('Y-m-d H:i:s', time()));
 
 // Helper function to get current timestamp
 function getCurrentTimestamp() {

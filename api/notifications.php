@@ -8,96 +8,64 @@ require_once '../config/config.php';
 require_once '../includes/auth.php';
 require_once '../includes/functions.php';
 
-// Set JSON header
+// Set content type to JSON
 header('Content-Type: application/json');
 
 // Check if user is logged in
 if (!isLoggedIn()) {
-    echo json_encode(['error' => 'Authentication required']);
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
 
-$response = ['success' => false];
+$currentUser = getCurrentUser();
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $action = $_GET['action'] ?? '';
-    
-    if ($action === 'get_notifications') {
-        $limit = $_GET['limit'] ?? 10;
-        $notifications = getNotifications($_SESSION['user_id'], $limit);
-        
-        $response['success'] = true;
-        $response['notifications'] = $notifications;
-        
-    } elseif ($action === 'get_unread_count') {
-        $count = getUnreadNotificationCount($_SESSION['user_id']);
-        
-        $response['success'] = true;
-        $response['count'] = $count;
-        
-    } else {
-        $response['error'] = 'Invalid action';
-    }
-    
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Handle different actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
-    if ($action === 'mark_read') {
-        $notifId = $_POST['notif_id'] ?? 0;
-        
-        if (!$notifId) {
-            $response['error'] = 'Notification ID is required';
-        } else {
-            $result = markNotificationAsRead($notifId, $_SESSION['user_id']);
-            
-            if ($result) {
-                $response['success'] = true;
-                $response['message'] = 'Notification marked as read';
+    switch ($action) {
+        case 'mark_read':
+            $notifId = isset($_POST['notif_id']) ? (int)$_POST['notif_id'] : 0;
+            if ($notifId && markNotificationAsRead($notifId, $currentUser['user_id'])) {
+                echo json_encode(['success' => true]);
             } else {
-                $response['error'] = 'Failed to mark notification as read';
+                echo json_encode(['error' => 'Failed to mark notification as read']);
             }
-        }
-        
-    } elseif ($action === 'mark_all_read') {
-        $result = markAllNotificationsAsRead($_SESSION['user_id']);
-        
-        if ($result) {
-            $response['success'] = true;
-            $response['message'] = 'All notifications marked as read';
-        } else {
-            $response['error'] = 'Failed to mark all notifications as read';
-        }
-        
-    } elseif ($action === 'send_notification') {
-        // Only admin can send notifications
-        if (!isAdmin()) {
-            $response['error'] = 'Permission denied';
-        } else {
-            $userId = $_POST['user_id'] ?? 0;
-            $message = $_POST['message'] ?? '';
-            $type = $_POST['type'] ?? 'info';
-            $gdId = $_POST['gd_id'] ?? null;
+            break;
             
-            if (!$userId || !$message) {
-                $response['error'] = 'User ID and message are required';
+        case 'mark_all_read':
+            if (markAllNotificationsAsRead($currentUser['user_id'])) {
+                echo json_encode(['success' => true]);
             } else {
-                $result = sendNotification($userId, $message, $type, $gdId);
-                
-                if ($result) {
-                    $response['success'] = true;
-                    $response['message'] = 'Notification sent successfully';
-                } else {
-                    $response['error'] = 'Failed to send notification';
-                }
+                echo json_encode(['error' => 'Failed to mark all notifications as read']);
             }
-        }
-        
-    } else {
-        $response['error'] = 'Invalid action';
+            break;
+            
+        default:
+            echo json_encode(['error' => 'Invalid action']);
+            break;
     }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $action = $_GET['action'] ?? '';
     
+    switch ($action) {
+        case 'get_unread_count':
+            $count = getUnreadNotificationCount($currentUser['user_id']);
+            echo json_encode(['count' => $count]);
+            break;
+            
+        case 'get_notifications':
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+            $notifications = getNotifications($currentUser['user_id'], $limit);
+            echo json_encode(['notifications' => $notifications]);
+            break;
+            
+        default:
+            echo json_encode(['error' => 'Invalid action']);
+            break;
+    }
 } else {
-    $response['error'] = 'Invalid request method';
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed']);
 }
-
-echo json_encode($response);

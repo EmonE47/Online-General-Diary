@@ -8,60 +8,63 @@ require_once '../config/config.php';
 require_once '../includes/auth.php';
 require_once '../includes/security.php';
 
-// Set JSON header
+// Set content type to JSON
 header('Content-Type: application/json');
 
 // Check if user is logged in
 if (!isLoggedIn()) {
-    echo json_encode(['error' => 'Authentication required']);
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
 
-$response = ['success' => false];
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-    
-    if ($action === 'upload_file') {
-        $gdId = $_POST['gd_id'] ?? 0;
-        
-        if (!$gdId) {
-            $response['error'] = 'GD ID is required';
-        } elseif (!isset($_FILES['file'])) {
-            $response['error'] = 'No file uploaded';
-        } else {
-            $file = $_FILES['file'];
-            $result = secureFileUpload($file, $gdId);
-            
-            if (isset($result['success'])) {
-                $response['success'] = true;
-                $response['message'] = $result['success'];
-                $response['file_id'] = $result['file_id'];
-                $response['filename'] = $result['filename'];
-            } else {
-                $response['error'] = $result['error'];
-            }
-        }
-    } elseif ($action === 'delete_file') {
-        $fileId = $_POST['file_id'] ?? 0;
-        
-        if (!$fileId) {
-            $response['error'] = 'File ID is required';
-        } else {
-            $result = deleteFile($fileId, $_SESSION['user_id']);
-            
-            if (isset($result['success'])) {
-                $response['success'] = true;
-                $response['message'] = $result['success'];
-            } else {
-                $response['error'] = $result['error'];
-            }
-        }
-    } else {
-        $response['error'] = 'Invalid action';
-    }
-} else {
-    $response['error'] = 'Invalid request method';
+// Only allow POST requests
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' => 'Method not allowed']);
+    exit();
 }
 
-echo json_encode($response);
+// Get GD ID
+$gdId = isset($_POST['gd_id']) ? (int)$_POST['gd_id'] : 0;
+
+if (!$gdId) {
+    echo json_encode(['error' => 'GD ID is required']);
+    exit();
+}
+
+// Check if user has permission to upload files for this GD
+$currentUser = getCurrentUser();
+$sql = "SELECT user_id FROM gds WHERE gd_id = ?";
+$gd = fetchRow($sql, [$gdId]);
+
+if (!$gd) {
+    echo json_encode(['error' => 'GD not found']);
+    exit();
+}
+
+// Check permissions (user can upload to their own GDs, admin/SI can upload to any)
+if (!isAdmin() && !isSI() && $gd['user_id'] != $currentUser['user_id']) {
+    echo json_encode(['error' => 'Permission denied']);
+    exit();
+}
+
+// Check if file was uploaded
+if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+    echo json_encode(['error' => 'No file uploaded or upload error']);
+    exit();
+}
+
+// Upload file
+$result = secureFileUpload($_FILES['file'], $gdId);
+
+if (isset($result['success'])) {
+    echo json_encode([
+        'success' => true,
+        'message' => $result['success'],
+        'file_id' => $result['file_id'],
+        'filename' => $result['filename']
+    ]);
+} else {
+    echo json_encode(['error' => $result['error']]);
+}

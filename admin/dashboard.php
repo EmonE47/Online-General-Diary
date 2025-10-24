@@ -115,24 +115,34 @@ $pendingNotifications = fetchRow($sql)['count'];
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <a href="gd_management.php" class="btn btn-outline-primary w-100">
                             <i class="fas fa-file-alt me-2"></i>Manage GDs
                         </a>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <a href="users.php" class="btn btn-outline-success w-100">
                             <i class="fas fa-users me-2"></i>User Management
                         </a>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <a href="register_user.php" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Register User
+                        </a>
+                    </div>
+                    <div class="col-md-2">
                         <a href="status_management.php" class="btn btn-outline-info w-100">
                             <i class="fas fa-tags me-2"></i>Status Management
                         </a>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <a href="sql_panel.php" class="btn btn-outline-warning w-100">
                             <i class="fas fa-database me-2"></i>SQL Panel
+                        </a>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="notifications.php" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-bell me-2"></i>Notifications
                         </a>
                     </div>
                 </div>

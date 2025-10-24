@@ -2,9 +2,14 @@
 /**
  * General Utility Functions
  * Online General Diary System
- * 
+ *
  * This file contains general utility functions used throughout the application
  */
+
+// Get the project root directory
+$projectRoot = dirname(__DIR__);
+require_once $projectRoot . '/config/config.php';
+require_once $projectRoot . '/config/db.php';
 
 /**
  * Generate GD number

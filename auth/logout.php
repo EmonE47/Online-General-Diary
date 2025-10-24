@@ -1,6 +1,6 @@
 <?php
 /**
- * Logout Handler
+ * Logout Page
  * Online General Diary System
  */
 

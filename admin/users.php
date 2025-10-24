@@ -127,9 +127,9 @@ $totalPages = ceil($total / $limit);
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Management</h5>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                    <i class="fas fa-plus me-2"></i>Add User
-                </button>
+                <a href="register_user.php" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Register New User
+                </a>
             </div>
             <div class="card-body">
                 <!-- Search and Filter -->

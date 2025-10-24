@@ -271,10 +271,15 @@ function showQueryDescription() {
     const description = selectedOption.getAttribute('data-description');
     const descriptionDiv = document.getElementById('queryDescription');
     const descriptionText = document.getElementById('descriptionText');
+    const query = selectedOption.getAttribute('data-query');
     
     if (description) {
         descriptionText.textContent = description;
         descriptionDiv.style.display = 'block';
+        // Load the SQL into the editor so admin can view/edit before running
+        if (query) {
+            document.getElementById('query').value = query;
+        }
     } else {
         descriptionDiv.style.display = 'none';
     }

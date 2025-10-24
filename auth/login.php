@@ -34,21 +34,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     $csrfToken = $_POST['csrf_token'] ?? '';
     
+    // Debug login attempt
+    error_log("Login attempt - Email: " . $email);
+    
     // Validate CSRF token
     if (!validateCSRFToken($csrfToken)) {
         $error = 'Invalid request. Please try again.';
+        error_log("CSRF token validation failed");
     } elseif (empty($email) || empty($password)) {
         $error = 'Please fill in all fields.';
+        error_log("Empty fields in login form");
     } elseif (!isValidEmail($email)) {
         $error = 'Please enter a valid email address.';
+        error_log("Invalid email format: " . $email);
     } else {
         // Check rate limiting
         if (!checkLoginRateLimit($email)) {
             $error = 'Too many failed login attempts. Please try again later.';
+            error_log("Rate limit exceeded for email: " . $email);
         } else {
             $user = loginUser($email, $password);
             
             if ($user) {
+                error_log("User authenticated successfully - Role: " . $user['role']);
                 // Redirect based on role
                 switch ($user['role']) {
                     case 'admin':
@@ -62,11 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         break;
                     default:
                         $error = 'Invalid user role.';
+                        error_log("Invalid role found: " . $user['role']);
                 }
                 exit();
             } else {
                 logFailedLogin($email);
                 $error = 'Invalid email or password.';
+                error_log("Login failed for email: " . $email);
             }
         }
     }
@@ -215,6 +225,10 @@ $csrfToken = generateCSRFToken();
                             <p class="mb-0">Don't have an account?</p>
                             <a href="register.php" class="text-decoration-none">
                                 <i class="fas fa-user-plus me-1"></i>Register as User
+                            </a>
+                            <span class="mx-2">|</span>
+                            <a href="register_si.php" class="text-decoration-none">
+                                <i class="fas fa-user-tie me-1"></i>Register as SI
                             </a>
                         </div>
                         

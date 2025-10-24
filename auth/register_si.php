@@ -1,11 +1,12 @@
 <?php
 /**
- * Registration Page
+ * SI Self Registration
  * Online General Diary System
  */
 
 require_once '../config/config.php';
 require_once '../includes/auth.php';
+require_once '../includes/functions.php';
 require_once '../includes/security.php';
 
 // Redirect if already logged in
@@ -45,7 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'confirm_password' => $_POST['confirm_password'] ?? '',
             'phone' => sanitizeInput($_POST['phone'] ?? ''),
             'nid' => sanitizeInput($_POST['nid'] ?? ''),
-            'address' => sanitizeInput($_POST['address'] ?? '')
+            'address' => sanitizeInput($_POST['address'] ?? ''),
+            'role' => 'si' // Force SI role
         ];
         
         // Validate passwords match
@@ -55,11 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Remove confirm_password from userData
             unset($userData['confirm_password']);
             
-            // Register user
-            $result = registerUser($userData);
+            // Register user as SI (pending approval)
+            $result = registerSIWithApproval($userData);
             
             if (isset($result['success'])) {
-                $success = $result['success'] . ' You can now login with your credentials.';
+                $success = $result['success'];
                 
                 // Clear form data on success
                 $userData = array_fill_keys(array_keys($userData), '');
@@ -78,12 +80,12 @@ $csrfToken = generateCSRFToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - <?php echo APP_NAME; ?></title>
+    <title>SI Registration - <?php echo APP_NAME; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -95,7 +97,7 @@ $csrfToken = generateCSRFToken();
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
         .register-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
             border-radius: 20px 20px 0 0;
             padding: 2rem;
@@ -108,11 +110,11 @@ $csrfToken = generateCSRFToken();
             transition: all 0.3s ease;
         }
         .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
         }
         .btn-register {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             border: none;
             border-radius: 10px;
             padding: 12px;
@@ -121,7 +123,7 @@ $csrfToken = generateCSRFToken();
         }
         .btn-register:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
         .alert {
             border-radius: 10px;
@@ -135,8 +137,8 @@ $csrfToken = generateCSRFToken();
             <div class="col-md-8 col-lg-6">
                 <div class="card register-card">
                     <div class="register-header">
-                        <h2><i class="fas fa-user-plus me-2"></i>Register</h2>
-                        <p class="mb-0">Create your account to file General Diary cases</p>
+                        <h2><i class="fas fa-user-tie me-2"></i>Sub-Inspector Registration</h2>
+                        <p class="mb-0">Register for SI account (requires admin approval)</p>
                     </div>
                     <div class="card-body p-4">
                         <?php if ($error): ?>
@@ -151,7 +153,7 @@ $csrfToken = generateCSRFToken();
                             </div>
                         <?php endif; ?>
                         
-                        <form method="POST" action="" id="registerForm">
+                        <form method="POST" action="" id="siRegisterForm">
                             <input type="hidden" name="csrf_token" value="<?php echo $csrfToken; ?>">
                             
                             <div class="row g-3">
@@ -215,16 +217,16 @@ $csrfToken = generateCSRFToken();
                                 
                                 <div class="col-12">
                                     <label for="address" class="form-label">
-                                        <i class="fas fa-map-marker-alt me-2"></i>Address
+                                        <i class="fas fa-map-marker-alt me-2"></i>Station/Office Address
                                     </label>
                                     <textarea class="form-control" id="address" name="address" rows="3" required
-                                              placeholder="Your complete address"><?php echo htmlspecialchars($userData['address'] ?? ''); ?></textarea>
+                                              placeholder="Your police station or office address"><?php echo htmlspecialchars($userData['address'] ?? ''); ?></textarea>
                                 </div>
                                 
                                 <div class="col-12">
                                     <div class="d-grid">
-                                        <button type="submit" class="btn btn-primary btn-register">
-                                            <i class="fas fa-user-plus me-2"></i>Register
+                                        <button type="submit" class="btn btn-success btn-register">
+                                            <i class="fas fa-user-tie me-2"></i>Register as SI
                                         </button>
                                     </div>
                                 </div>
@@ -236,6 +238,20 @@ $csrfToken = generateCSRFToken();
                             <a href="login.php" class="text-decoration-none">
                                 <i class="fas fa-sign-in-alt me-1"></i>Login
                             </a>
+                            <span class="mx-2">|</span>
+                            <a href="../auth/register.php" class="text-decoration-none">
+                                <i class="fas fa-user me-1"></i>Register as User
+                            </a>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-light rounded">
+                            <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Important Notes:</h6>
+                            <ul class="mb-0 small">
+                                <li>Your registration will be reviewed by an administrator</li>
+                                <li>You will receive an email notification once approved</li>
+                                <li>Only verified police personnel can register as SI</li>
+                                <li>Please provide accurate information for verification</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -246,7 +262,7 @@ $csrfToken = generateCSRFToken();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Form validation
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
+        document.getElementById('siRegisterForm').addEventListener('submit', function(e) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
             

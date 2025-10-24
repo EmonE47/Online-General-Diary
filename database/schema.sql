@@ -1,4 +1,3 @@
-
 CREATE TABLE IF NOT EXISTS users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     f_name VARCHAR(50) NOT NULL,
@@ -116,9 +115,6 @@ CREATE TABLE IF NOT EXISTS activity_log (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
-DELIMITER //
-
 CREATE TRIGGER generate_gd_number 
 BEFORE INSERT ON gds
 FOR EACH ROW
@@ -126,9 +122,7 @@ BEGIN
     IF NEW.gd_number IS NULL OR NEW.gd_number = '' THEN
         SET NEW.gd_number = CONCAT('GD', YEAR(NOW()), LPAD(MONTH(NOW()), 2, '0'), LPAD(DAY(NOW()), 2, '0'), LPAD((SELECT COALESCE(MAX(SUBSTRING(gd_number, -4)), 0) + 1 FROM gds WHERE DATE(created_at) = CURDATE()), 4, '0'));
     END IF;
-END//
-
-DELIMITER ;
+END;
 
 CREATE INDEX idx_users_full_name ON users(f_name, l_name);
 CREATE INDEX idx_gds_status_date ON gds(status_id, incident_date);

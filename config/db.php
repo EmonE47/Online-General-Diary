@@ -24,6 +24,7 @@ class Database {
         
         try {
             $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=" . $this->charset;
+            error_log("Attempting database connection to: " . $this->host);
             
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -33,11 +34,14 @@ class Database {
             ];
             
             $this->pdo = new PDO($dsn, $this->username, $this->password, $options);
+            error_log("Database connection successful");
             
         } catch(PDOException $exception) {
             error_log("Database connection error: " . $exception->getMessage());
             die("Database connection failed. Please check your configuration.");
         }
+        
+        return $this->pdo;
         
         return $this->pdo;
     }

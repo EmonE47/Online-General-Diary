@@ -1,383 +1,282 @@
 # Online General Diary System
 
-A comprehensive web-based General Diary (GD) management system with role-based access control for Administrators, Sub-Inspectors (SI), and Citizens.
+A comprehensive web-based General Diary (GD) management system built with PHP, MySQL, and Bootstrap. This system provides role-based access control for Administrators, Sub-Inspectors (SI), and Citizens to manage GD cases efficiently.
 
 ## 🚀 Features
 
-### Core Features
-- **Role-Based Authentication**: Secure login system for Admin, SI, and User roles
-- **GD Management**: Complete lifecycle management of General Diary cases
-- **File Upload System**: Support for multiple file types with secure storage
+### Core Functionality
+- **Role-Based Access Control**: Admin, SI, and User roles with different permissions
+- **GD Management**: File, track, and manage General Diary cases
+- **File Upload**: Support for multiple file types (images, documents, audio, video)
 - **Real-time Notifications**: Instant updates on case status changes
-- **Custom SQL Panel**: Advanced query capabilities for administrators
 - **Activity Logging**: Complete audit trail of all system actions
-- **Responsive Design**: Works seamlessly on all devices
+- **Responsive Design**: Works on all devices and screen sizes
 
-### Admin Panel
-- User management (create, edit, activate/deactivate users)
-- GD assignment to Sub-Inspectors
-- Status management (CRUD operations)
-- Custom SQL query execution with predefined queries
-- System notifications management
-- Admin notes on GDs
-- Comprehensive dashboard with statistics
+### Admin Features
+- **Dashboard**: System overview with statistics
+- **User Management**: Manage users, roles, and permissions
+- **User Registration**: Create new admin, SI, and user accounts
+- **SI Approval**: Approve/reject SI self-registrations
+- **GD Management**: Assign cases to SIs and update status
+- **Status Management**: Create and manage GD statuses
+- **SQL Panel**: Execute custom queries for advanced analysis
+- **Notifications**: View all system notifications
+- **Admin Notes**: Add internal and public notes to cases
 
-### SI Dashboard
-- View assigned GDs
-- Update case status
-- Add investigation notes
-- Track case progress
+### SI (Sub-Inspector) Features
+- **Dashboard**: View assigned cases and statistics
+- **Assigned Cases**: Manage assigned GD cases
+- **Status Updates**: Update case status and progress
+- **Notifications**: Receive case assignments and updates
 
-### User Portal
-- File new GDs with detailed forms
-- Upload supporting documents
-- Track GD status and progress
-- View notifications and updates
-- Access case history
+### User Features
+- **Dashboard**: Personal GD overview and statistics
+- **File New GD**: Submit new General Diary cases
+- **My GDs**: Track all filed cases
+- **Notifications**: Receive status updates
 
-## 🛠️ Technology Stack
+## 🛠️ Installation & Setup
 
-- **Frontend**: HTML5, CSS3, Bootstrap 5, JavaScript, jQuery
-- **Backend**: PHP 7.4+
-- **Database**: MySQL 5.7+ / MariaDB 10.3+
-- **Security**: Password hashing, CSRF protection, SQL injection prevention
-- **File Handling**: Secure file upload with type validation
+### Prerequisites
+- XAMPP (Apache + MySQL + PHP)
+- Web browser
+- MySQL database access
 
-## 📋 Prerequisites
+### Installation Steps
 
-- PHP 7.4 or higher
-- MySQL 5.7 or MariaDB 10.3 or higher
-- Web server (Apache/Nginx)
-- PHP extensions: PDO, PDO_MySQL, GD, fileinfo
+1. **Clone/Download the project** to your XAMPP htdocs directory:
+   ```
+   C:\xampp\htdocs\DB\Online-General-Diary\
+   ```
 
-## 🔧 Installation
+2. **Start XAMPP services**:
+   - Start Apache
+   - Start MySQL
 
-### 1. Clone/Download the Project
-```bash
-git clone <repository-url>
-# or download and extract the ZIP file
-```
+3. **Set up the database**:
+   - Open phpMyAdmin (http://localhost/phpmyadmin)
+   - Create a new database named `online_gd_system`
+   - Import the schema from `database/schema.sql`
+   - Import the seed data from `database/seed_data.sql`
 
-### 2. Database Setup
+4. **Configure the application**:
+   - Database settings are in `config/db.php`
+   - Application settings are in `config/config.php`
+   - Default settings work with XAMPP installation
 
-#### Create Database
-```sql
-CREATE DATABASE online_gd_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+5. **Access the application**:
+   - Open your browser and go to: `http://localhost/DB/Online-General-Diary`
 
-#### Import Database Schema
-```bash
-mysql -u root -p online_gd_system < database/schema.sql
-```
+## 🔐 Registration & Login System
 
-#### Import Sample Data
-```bash
-mysql -u root -p online_gd_system < database/seed_data.sql
-```
+### Registration Methods
 
-### 3. Configuration
+#### 1. **Admin Registration** (Admin Panel)
+- **Access**: Admin dashboard → "Register User" button
+- **Who can use**: Only existing administrators
+- **Process**: Immediate activation
+- **Roles available**: Admin, SI, User
+- **Features**: 
+  - Full role selection
+  - Immediate account activation
+  - Automatic notifications to new users
 
-#### Database Configuration
-Edit `config/db.php` and update the database credentials:
+#### 2. **SI Self-Registration** (Public)
+- **Access**: Login page → "Register as SI" link
+- **Who can use**: Police personnel
+- **Process**: Requires admin approval
+- **Role**: Sub-Inspector only
+- **Features**:
+  - Account created but inactive
+  - Admin notification for approval
+  - Email notification upon approval
 
-```php
-private $host = 'localhost';
-private $db_name = 'online_gd_system';
-private $username = 'your_username';
-private $password = 'your_password';
-```
+#### 3. **User Registration** (Public)
+- **Access**: Login page → "Register as User" link
+- **Who can use**: General public
+- **Process**: Immediate activation
+- **Role**: Regular user only
+- **Features**: 
+  - Immediate account activation
+  - Can file GDs immediately
 
-#### Application Configuration
-Edit `config/config.php` and update the application settings:
-
-```php
-define('APP_URL', 'http://localhost/your-project-path');
-```
-
-#### File Upload Directory
-Create the uploads directory and set proper permissions:
-
-```bash
-mkdir -p assets/uploads
-chmod 755 assets/uploads
-```
-
-### 4. Web Server Configuration
-
-#### Apache (.htaccess)
-Create a `.htaccess` file in the project root:
-
-```apache
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
-
-# Security headers
-Header always set X-Content-Type-Options nosniff
-Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
-```
-
-#### Nginx
-Add the following to your Nginx configuration:
-
-```nginx
-location / {
-    try_files $uri $uri/ /index.php?$query_string;
-}
-
-location ~ \.php$ {
-    fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
-    fastcgi_index index.php;
-    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-    include fastcgi_params;
-}
-```
-
-## 👥 Default User Accounts
-
-After importing the seed data, you can login with these accounts:
+### Default Login Credentials
 
 ### Admin Account
 - **Email**: admin@gd.com
 - **Password**: password123
-- **Access**: Full administrative privileges
+- **Access**: Full system administration
 
-### Sub-Inspector Account
+### SI Account
 - **Email**: sarah.si@gd.com
 - **Password**: password123
-- **Access**: SI dashboard and assigned GDs
+- **Access**: Manage assigned cases
 
 ### User Account
 - **Email**: rahim.user@gd.com
 - **Password**: password123
-- **Access**: User portal for filing GDs
+- **Access**: File and track GDs
 
 ## 📁 Project Structure
 
 ```
 Online-General-Diary/
-├── config/
-│   ├── db.php                 # Database connection
-│   └── config.php             # Application configuration
-├── includes/
-│   ├── auth.php               # Authentication functions
-│   ├── functions.php          # Utility functions
-│   └── security.php           # Security functions
-├── assets/
-│   ├── css/                   # CSS files
-│   ├── js/                    # JavaScript files
-│   └── uploads/               # File upload directory
-├── admin/
-│   ├── dashboard.php          # Admin dashboard
-│   ├── users.php              # User management
-│   ├── gd_management.php     # GD management
-│   ├── status_management.php # Status management
-│   ├── sql_panel.php          # SQL query panel
-│   └── notifications.php      # Notifications
-├── si/
-│   ├── dashboard.php          # SI dashboard
-│   ├── assigned_gds.php       # Assigned GDs
-│   └── gd_details.php         # GD details
-├── user/
-│   ├── dashboard.php          # User dashboard
-│   ├── file_gd.php           # File new GD
-│   ├── my_gds.php            # User's GDs
-│   └── notifications.php      # Notifications
-├── auth/
-│   ├── login.php              # Login page
-│   ├── register.php           # Registration
-│   └── logout.php             # Logout handler
-├── api/
-│   ├── file_upload.php        # File upload API
-│   └── notifications.php      # Notifications API
-├── database/
-│   ├── schema.sql             # Database schema
-│   └── seed_data.sql          # Sample data
-├── index.php                  # Landing page
-├── header.php                 # Common header
-├── footer.php                 # Common footer
-└── README.md                  # This file
+├── admin/                 # Admin panel pages
+│   ├── dashboard.php
+│   ├── gd_management.php
+│   ├── users.php
+│   ├── status_management.php
+│   ├── sql_panel.php
+│   ├── notifications.php
+│   └── admin_notes.php
+├── api/                  # API endpoints
+│   ├── file_upload.php
+│   └── notifications.php
+├── auth/                 # Authentication pages
+│   ├── login.php
+│   ├── register.php
+│   └── logout.php
+├── config/               # Configuration files
+│   ├── config.php
+│   └── db.php
+├── database/             # Database files
+│   ├── schema.sql
+│   └── seed_data.sql
+├── includes/             # Core functions
+│   ├── auth.php
+│   ├── functions.php
+│   └── security.php
+├── si/                   # SI panel pages
+│   ├── dashboard.php
+│   ├── assigned_gds.php
+│   └── notifications.php
+├── User/                 # User panel pages
+│   ├── dashboard.php
+│   ├── file_gd.php
+│   ├── my_gds.php
+│   └── notifications.php
+├── assets/               # Static assets
+│   └── uploads/          # File uploads directory
+├── header.php            # Common header
+├── footer.php            # Common footer
+└── index.php             # Landing page
 ```
 
-## 🔒 Security Features
+## 🔧 Configuration
 
-### Authentication & Authorization
-- Password hashing using PHP's `password_hash()`
-- Session management with timeout
-- Role-based access control
-- CSRF token protection
+### Database Configuration (`config/db.php`)
+```php
+private $host = 'localhost';
+private $db_name = 'online_gd_system';
+private $username = 'root';
+private $password = '';
+```
 
-### Input Validation
-- SQL injection prevention using prepared statements
-- XSS protection with input sanitization
-- File upload validation and type checking
-- Rate limiting for login attempts
+### Application Configuration (`config/config.php`)
+- **APP_URL**: Application base URL
+- **UPLOAD_DIR**: File upload directory
+- **MAX_FILE_SIZE**: Maximum file size (5MB)
+- **SESSION_TIMEOUT**: Session timeout (1 hour)
+- **PASSWORD_MIN_LENGTH**: Minimum password length (8)
 
-### Data Protection
-- Secure file storage outside web root
-- Unique filename generation
-- File type and size validation
-- Activity logging for audit trails
-
-## 📊 Database Schema
-
-### Core Tables
-- **users**: User accounts and profiles
-- **gds**: General Diary records
-- **gd_statuses**: Status definitions
-- **files**: Uploaded file metadata
-- **admin_notes**: Admin notes on GDs
-- **notifications**: System notifications
-- **activity_log**: System activity tracking
-
-### Key Relationships
-- Users can file multiple GDs
-- GDs can be assigned to SIs
-- GDs can have multiple files and notes
-- All actions are logged for audit purposes
-
-## 🚀 Usage Guide
+## 📋 Usage Guide
 
 ### For Administrators
 1. **Login** with admin credentials
-2. **Manage Users**: Create, edit, or deactivate user accounts
-3. **Assign GDs**: Assign cases to Sub-Inspectors
-4. **Monitor System**: View statistics and activity logs
-5. **Execute Queries**: Use the SQL panel for advanced reporting
+2. **Dashboard**: View system statistics and recent activity
+3. **User Management**: Add/edit users and manage roles
+4. **GD Management**: Assign cases to SIs and update status
+5. **Status Management**: Create custom GD statuses
+6. **SQL Panel**: Execute custom queries for analysis
 
-### For Sub-Inspectors
+### For Sub-Inspectors (SI)
 1. **Login** with SI credentials
-2. **View Assigned Cases**: Check your assigned GDs
-3. **Update Status**: Change case status as investigation progresses
-4. **Add Notes**: Document investigation findings
+2. **Dashboard**: View assigned cases and statistics
+3. **Assigned Cases**: Manage assigned GD cases
+4. **Update Status**: Change case status and add notes
 
 ### For Users
-1. **Register** for a new account or login
-2. **File New GD**: Complete the detailed form
-3. **Upload Documents**: Attach supporting files
-4. **Track Progress**: Monitor case status updates
-5. **Receive Notifications**: Get updates on case progress
+1. **Register** a new account or login with existing credentials
+2. **Dashboard**: View personal GD statistics
+3. **File New GD**: Submit new General Diary cases
+4. **My GDs**: Track all filed cases and their status
 
-## 🔧 Customization
+## 🔒 Security Features
 
-### Adding New Status Types
-1. Go to Admin Panel → Status Management
-2. Click "Add New Status"
-3. Define status name and description
-4. Status will be available for GD assignment
+- **Password Hashing**: All passwords are securely hashed
+- **CSRF Protection**: Cross-site request forgery protection
+- **SQL Injection Prevention**: Prepared statements used throughout
+- **File Upload Security**: File type and size validation
+- **Session Management**: Secure session handling with timeout
+- **Input Validation**: All user inputs are sanitized and validated
+- **Role-Based Access**: Strict access control based on user roles
 
-### Modifying File Upload Limits
-Edit `config/config.php`:
-```php
-define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10MB
-```
+## 📊 Database Schema
 
-### Customizing Email Notifications
-Update email settings in `config/config.php`:
-```php
-define('SMTP_HOST', 'your-smtp-host');
-define('SMTP_USERNAME', 'your-username');
-define('SMTP_PASSWORD', 'your-password');
-```
+### Main Tables
+- **users**: User accounts and roles
+- **gds**: General Diary cases
+- **gd_statuses**: Available GD statuses
+- **files**: Uploaded files linked to GDs
+- **admin_notes**: Internal and public notes
+- **notifications**: System notifications
+- **activity_log**: Audit trail of all actions
 
-## 🐛 Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-#### Database Connection Error
+1. **Database Connection Error**:
+   - Ensure MySQL is running in XAMPP
 - Check database credentials in `config/db.php`
-- Ensure MySQL service is running
-- Verify database exists and user has proper permissions
+   - Verify database `online_gd_system` exists
 
-#### File Upload Issues
-- Check `assets/uploads/` directory permissions (755)
-- Verify PHP upload limits in `php.ini`
-- Check file type restrictions in `config/config.php`
+2. **File Upload Issues**:
+   - Check `assets/uploads/` directory permissions
+   - Verify file size limits in `config/config.php`
+   - Ensure PHP upload settings are correct
 
-#### Session Issues
-- Ensure session directory is writable
-- Check session configuration in `php.ini`
+3. **Session Issues**:
+   - Check PHP session configuration
 - Verify session timeout settings
+   - Clear browser cookies if needed
 
-#### Permission Errors
-- Check file and directory permissions
-- Ensure web server has read access to all files
-- Verify write permissions for uploads directory
+4. **Permission Errors**:
+   - Ensure proper file permissions on upload directory
+   - Check XAMPP Apache configuration
 
-### Debug Mode
-Enable debug mode in `config/config.php`:
-```php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-```
+### Error Logs
+- Check XAMPP error logs: `C:\xampp\apache\logs\error.log`
+- Check PHP error logs: `C:\xampp\php\logs\php_error_log`
 
-## 📈 Performance Optimization
-
-### Database Optimization
-- Regular database maintenance and optimization
-- Proper indexing on frequently queried columns
-- Query optimization for large datasets
-
-### File Storage
-- Implement file compression for large files
-- Use CDN for static assets
-- Regular cleanup of old files
-
-### Caching
-- Implement Redis/Memcached for session storage
-- Use browser caching for static assets
-- Database query result caching
-
-## 🔄 Backup & Maintenance
-
-### Database Backup
-```bash
-mysqldump -u username -p online_gd_system > backup.sql
-```
-
-### File Backup
-```bash
-tar -czf uploads_backup.tar.gz assets/uploads/
-```
+## 🔄 Updates & Maintenance
 
 ### Regular Maintenance
-- Clean old activity logs (older than 90 days)
-- Remove old notifications (older than 30 days)
-- Optimize database tables
-- Update system dependencies
+- Clean old activity logs (90+ days)
+- Clean old notifications (30+ days)
+- Monitor file upload directory size
+- Backup database regularly
 
-## 📝 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+### Security Updates
+- Keep PHP and MySQL updated
+- Regularly review user accounts
+- Monitor system logs for suspicious activity
+- Update passwords periodically
 
 ## 📞 Support
 
-For support and questions:
-- Create an issue in the repository
-- Check the troubleshooting section
-- Review the documentation
+For technical support or questions:
+1. Check the troubleshooting section above
+2. Review error logs for specific issues
+3. Ensure all prerequisites are met
+4. Verify XAMPP services are running properly
 
-## 🔮 Future Enhancements
+## 📝 License
 
-- Mobile app development
-- Advanced reporting and analytics
-- Email/SMS notifications
-- Multi-language support
-- API for third-party integrations
-- Advanced file management
-- Case priority system
-- Automated status updates
+This project is developed for educational and administrative purposes. Please ensure compliance with local laws and regulations when using this system for official purposes.
 
 ---
 
-**Note**: This system is designed for educational and demonstration purposes. For production use, additional security measures and testing are recommended.
+**Version**: 1.0.0  
+**Last Updated**: December 2024  
+**Compatibility**: PHP 7.4+, MySQL 5.7+, Bootstrap 5.1+

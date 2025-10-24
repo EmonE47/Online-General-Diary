@@ -8,6 +8,11 @@ if (!isset($pageTitle)) {
     $pageTitle = APP_NAME;
 }
 
+// Ensure functions are available (some pages include header.php before loading functions)
+if (!function_exists('getUnreadNotificationCount')) {
+    require_once __DIR__ . '/includes/functions.php';
+}
+
 $currentUser = getCurrentUser();
 $unreadNotifications = $currentUser ? getUnreadNotificationCount($currentUser['user_id']) : 0;
 ?>

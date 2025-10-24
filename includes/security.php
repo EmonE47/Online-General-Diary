@@ -2,10 +2,15 @@
 /**
  * Security Helper Functions
  * Online General Diary System
- * 
+ *
  * This file contains security-related functions for input validation,
  * SQL injection prevention, and other security measures
  */
+
+// Get the project root directory
+$projectRoot = dirname(__DIR__);
+require_once $projectRoot . '/config/config.php';
+require_once $projectRoot . '/config/db.php';
 
 /**
  * Validate and sanitize SQL query for custom SQL panel

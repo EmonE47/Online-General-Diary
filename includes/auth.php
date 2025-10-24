@@ -6,8 +6,10 @@
  * This file contains authentication and session management functions
  */
 
-require_once 'config/config.php';
-require_once 'config/db.php';
+// Get the project root directory
+$projectRoot = dirname(__DIR__);
+require_once $projectRoot . '/config/config.php';
+require_once $projectRoot . '/config/db.php';
 
 /**
  * Check if user is logged in
@@ -124,28 +126,40 @@ function requireUser() {
  * @return array|false
  */
 function loginUser($email, $password) {
+    error_log("Login attempt for email: " . $email);
+    
     $sql = "SELECT * FROM users WHERE email = ? AND is_active = 1";
     $user = fetchRow($sql, [$email]);
     
-    if ($user && password_verify($password, $user['password'])) {
-        // Update last login
-        $updateSql = "UPDATE users SET updated_at = ? WHERE user_id = ?";
-        executeQuery($updateSql, [getCurrentTimestamp(), $user['user_id']]);
-        
-        // Set session variables
-        $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_role'] = $user['role'];
-        $_SESSION['user_name'] = $user['f_name'] . ' ' . $user['l_name'];
-        $_SESSION['login_time'] = time();
-        
-        // Log activity
-        logActivity($user['user_id'], 'LOGIN', 'User logged in successfully');
-        
-        return $user;
+    if (!$user) {
+        error_log("No user found with email: " . $email);
+        return false;
     }
     
-    return false;
+    if (!password_verify($password, $user['password'])) {
+        error_log("Password verification failed for email: " . $email);
+        return false;
+    }
+    
+    error_log("Password verified successfully for email: " . $email);
+    
+    // Update last login
+    $updateSql = "UPDATE users SET updated_at = ? WHERE user_id = ?";
+    executeQuery($updateSql, [getCurrentTimestamp(), $user['user_id']]);
+    
+    // Set session variables
+    $_SESSION['user_id'] = $user['user_id'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['user_name'] = $user['f_name'] . ' ' . $user['l_name'];
+    $_SESSION['login_time'] = time();
+    
+    error_log("Session variables set for user: " . $user['email'] . ", Role: " . $user['role']);
+    
+    // Log activity
+    logActivity($user['user_id'], 'LOGIN', 'User logged in successfully');
+    
+    return $user;
 }
 
 /**
@@ -237,6 +251,168 @@ function registerUser($userData) {
 }
 
 /**
+ * Register new user with specific role (Admin function)
+ * @param array $userData
+ * @return array|false
+ */
+function registerUserWithRole($userData) {
+    // Validate required fields
+    $requiredFields = ['f_name', 'l_name', 'email', 'password', 'phone', 'nid', 'address', 'role'];
+    foreach ($requiredFields as $field) {
+        if (empty($userData[$field])) {
+            return ['error' => "Field {$field} is required"];
+        }
+    }
+    
+    // Validate role
+    $allowedRoles = ['admin', 'si', 'user'];
+    if (!in_array($userData['role'], $allowedRoles)) {
+        return ['error' => 'Invalid user role'];
+    }
+    
+    // Validate email format
+    if (!isValidEmail($userData['email'])) {
+        return ['error' => 'Invalid email format'];
+    }
+    
+    // Validate phone format
+    if (!isValidPhone($userData['phone'])) {
+        return ['error' => 'Invalid phone number format'];
+    }
+    
+    // Validate NID format
+    if (!isValidNID($userData['nid'])) {
+        return ['error' => 'Invalid NID format'];
+    }
+    
+    // Check if email already exists
+    $sql = "SELECT user_id FROM users WHERE email = ?";
+    if (fetchRow($sql, [$userData['email']])) {
+        return ['error' => 'Email already exists'];
+    }
+    
+    // Check if NID already exists
+    $sql = "SELECT user_id FROM users WHERE nid = ?";
+    if (fetchRow($sql, [$userData['nid']])) {
+        return ['error' => 'NID already exists'];
+    }
+    
+    // Hash password
+    $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
+    
+    // Insert user with specified role
+    $sql = "INSERT INTO users (f_name, l_name, email, password, phone, nid, address, role) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $params = [
+        sanitizeInput($userData['f_name']),
+        sanitizeInput($userData['l_name']),
+        sanitizeInput($userData['email']),
+        $hashedPassword,
+        sanitizeInput($userData['phone']),
+        sanitizeInput($userData['nid']),
+        sanitizeInput($userData['address']),
+        $userData['role']
+    ];
+    
+    if (executeQuery($sql, $params)) {
+        $userId = getLastInsertId();
+        
+        // Log activity
+        logActivity($_SESSION['user_id'], 'USER_CREATE', "Created new {$userData['role']} user: {$userData['email']}", null);
+        
+        // Send notification to the new user
+        $roleName = ucfirst($userData['role']);
+        if ($userData['role'] === 'si') {
+            $roleName = 'Sub-Inspector';
+        }
+        sendNotification($userId, "Welcome! Your {$roleName} account has been created. You can now login with your credentials.", 'success');
+        
+        return ['success' => ucfirst($userData['role']) . ' user registered successfully', 'user_id' => $userId];
+    }
+    
+    return ['error' => 'Registration failed'];
+}
+
+/**
+ * Register new SI with admin approval required
+ * @param array $userData
+ * @return array|false
+ */
+function registerSIWithApproval($userData) {
+    // Validate required fields
+    $requiredFields = ['f_name', 'l_name', 'email', 'password', 'phone', 'nid', 'address'];
+    foreach ($requiredFields as $field) {
+        if (empty($userData[$field])) {
+            return ['error' => "Field {$field} is required"];
+        }
+    }
+    
+    // Validate email format
+    if (!isValidEmail($userData['email'])) {
+        return ['error' => 'Invalid email format'];
+    }
+    
+    // Validate phone format
+    if (!isValidPhone($userData['phone'])) {
+        return ['error' => 'Invalid phone number format'];
+    }
+    
+    // Validate NID format
+    if (!isValidNID($userData['nid'])) {
+        return ['error' => 'Invalid NID format'];
+    }
+    
+    // Check if email already exists
+    $sql = "SELECT user_id FROM users WHERE email = ?";
+    if (fetchRow($sql, [$userData['email']])) {
+        return ['error' => 'Email already exists'];
+    }
+    
+    // Check if NID already exists
+    $sql = "SELECT user_id FROM users WHERE nid = ?";
+    if (fetchRow($sql, [$userData['nid']])) {
+        return ['error' => 'NID already exists'];
+    }
+    
+    // Hash password
+    $hashedPassword = password_hash($userData['password'], PASSWORD_DEFAULT);
+    
+    // Insert user as SI but inactive (requires admin approval)
+    $sql = "INSERT INTO users (f_name, l_name, email, password, phone, nid, address, role, is_active) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'si', 0)";
+    
+    $params = [
+        sanitizeInput($userData['f_name']),
+        sanitizeInput($userData['l_name']),
+        sanitizeInput($userData['email']),
+        $hashedPassword,
+        sanitizeInput($userData['phone']),
+        sanitizeInput($userData['nid']),
+        sanitizeInput($userData['address'])
+    ];
+    
+    if (executeQuery($sql, $params)) {
+        $userId = getLastInsertId();
+        
+        // Log activity (no user_id since it's a registration)
+        logActivity(0, 'SI_REGISTER', "New SI registration: {$userData['email']}", null);
+        
+        // Send notification to all admins about new SI registration
+        $sql = "SELECT user_id FROM users WHERE role = 'admin' AND is_active = 1";
+        $admins = fetchAll($sql);
+        
+        foreach ($admins as $admin) {
+            sendNotification($admin['user_id'], "New SI registration from {$userData['f_name']} {$userData['l_name']} ({$userData['email']}) - requires approval", 'warning');
+        }
+        
+        return ['success' => 'SI registration submitted successfully. Your account will be activated after admin approval.'];
+    }
+    
+    return ['error' => 'Registration failed'];
+}
+
+/**
  * Change user password
  * @param int $userId
  * @param string $currentPassword
@@ -313,6 +489,39 @@ function updateProfile($userId, $userData) {
     }
     
     return ['error' => 'Profile update failed'];
+}
+
+/**
+ * Update user email
+ * @param int $userId
+ * @param string $newEmail
+ * @return array
+ */
+function updateEmail($userId, $newEmail) {
+    // Validate email
+    if (!filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+        return ['error' => 'Invalid email format'];
+    }
+
+    // Check if email already exists for another user
+    $sql = "SELECT user_id FROM users WHERE email = ? AND user_id != ?";
+    if (fetchRow($sql, [$newEmail, $userId])) {
+        return ['error' => 'Email already in use'];
+    }
+
+    // Update email
+    $sql = "UPDATE users SET email = ?, updated_at = ? WHERE user_id = ?";
+    if (executeQuery($sql, [$newEmail, getCurrentTimestamp(), $userId])) {
+        // Update session email if current user
+        if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $userId) {
+            $_SESSION['user_email'] = $newEmail;
+        }
+
+        logActivity($userId, 'EMAIL_UPDATE', 'Email updated to ' . $newEmail);
+        return ['success' => 'Email updated successfully'];
+    }
+
+    return ['error' => 'Failed to update email'];
 }
 
 /**
